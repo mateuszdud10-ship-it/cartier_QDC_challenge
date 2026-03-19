@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Environment files
+.env
+.envrc
+
+# Data
+data/raw/
+data/processed/
+*.csv
+
+# OS / editor
+desktop.ini
+.ipynb_checkpoints/
+.vscode/
+
+# Build / packaging
+build/
+dist/
+*.egg-info/
+
+# Testing / caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Output
+output/
