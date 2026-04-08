@@ -1,0 +1,83 @@
+Colonna,Categoria,Note_leakage
+CLIENT_ID,TEMPORAL_ID,Chiave cliente
+DATE_TARGET,TEMPORAL_ID,Data cutoff snapshot
+TARGET_3Y,TARGET,Spend nei 3 anni DOPO DATE_TARGET
+TARGET_5Y,TARGET,Spend nei 5 anni DOPO DATE_TARGET
+TARGET_10Y,TARGET,Spend nei 10 anni DOPO DATE_TARGET
+AGE,SAFE_FEATURE,Eta al DATE_TARGET
+SENIORITY,SAFE_FEATURE,Mesi dal primo acquisto a DATE_TARGET
+RESIDENCY_COUNTRY,STATIC,Paese residenza
+RESIDENCY_MARKET,STATIC,Mercato
+GENDER,STATIC,"Genere, non cambia nel tempo"
+TO_FULL_HIST,SAFE_FEATURE,Turnover storico totale
+TO_AVG_SPREAD,SAFE_FEATURE,Avg spread TO per transazione
+TO_PAST_3Y,SAFE_FEATURE,TO ultimi 3 anni prima DATE_TARGET
+TO_PAST_3Y_6Y,SAFE_FEATURE,TO tra 3 e 6 anni prima DATE_TARGET
+TO_OK_5K,SAFE_FEATURE,TO prodotti <5K storico
+TO_5K_10K,SAFE_FEATURE,TO prodotti 5-10K storico
+TO_10K_20K,SAFE_FEATURE,TO prodotti 10-20K storico
+TO_20K_50K,SAFE_FEATURE,TO prodotti 20-50K storico
+TO_MORE_10K,SAFE_FEATURE,TO prodotti >50K storico
+TO_CRC,SAFE_FEATURE,TO canale CRC storico
+TO_WEB,SAFE_FEATURE,TO canale Web storico
+TO_BTQ,SAFE_FEATURE,TO canale Boutique storico
+TO_ACCESSORIES,SAFE_FEATURE,TO Accessories storico
+TO_FRAGRANCE,SAFE_FEATURE,TO Fragrances storico
+TO_JWL,SAFE_FEATURE,TO Jewelry storico
+TO_JWL_WAT_HE,SAFE_FEATURE,TO High-End storico
+TO_OTHER_HE,SAFE_FEATURE,TO Other High-End storico
+TO_WAT,SAFE_FEATURE,TO Watches storico
+TO_STDDEV_SPREAD,SAFE_FEATURE,Std dev spread storico
+AVG_PRICE_PER_PDT,SAFE_FEATURE,Prezzo medio per prodotto storico
+STDDEV_PRICE,SAFE_FEATURE,Std dev prezzo storico
+AVG_PRICE_PER_TRS,SAFE_FEATURE,Prezzo medio per transazione storico
+MAX_PRICE_PER_PDT,SAFE_FEATURE,Prezzo max per prodotto storico
+MAX_PRICE_PER_TRS,SAFE_FEATURE,Prezzo max per transazione storico
+MAX_PRICE_IN_CRC,SAFE_FEATURE,Prezzo max in CRC storico
+MAX_PRICE_IN_ACCESSORIES,SAFE_FEATURE,Prezzo max Accessories storico
+MAX_PRICE_IN_JWL,SAFE_FEATURE,Prezzo max Jewelry storico
+MAX_PRICE_IN_WAT,SAFE_FEATURE,Prezzo max Watches storico
+MAX_PRICE_IN_WEB,SAFE_FEATURE,Prezzo max Web storico
+MAX_PRICE_IN_BTQ,SAFE_FEATURE,Prezzo max Boutique storico
+NB_TRS_FULL_HIST,SAFE_FEATURE,N. transazioni storico
+NB_MARKET_PURCHASED,SAFE_FEATURE,N. mercati in cui ha acquistato
+NB_CHANNEL,SAFE_FEATURE,N. canali usati
+NB_TRS_CRC,SAFE_FEATURE,N. transazioni CRC
+NB_TRS_WEB,SAFE_FEATURE,N. transazioni Web
+NB_TRS_BTQ,SAFE_FEATURE,N. transazioni Boutique
+AVG_TIMELAPSE_PER_TRS,SAFE_FEATURE,Tempo medio tra transazioni
+STDDEV_TIMELAPSE_TRS,SAFE_FEATURE,Std dev tempo tra transazioni
+MIN_TIMELAPSE_TRS,SAFE_FEATURE,Tempo min tra transazioni
+NB_TRS_2M_IN_A_ROW,SAFE_FEATURE,Transazioni consecutive in 2 mesi
+NB_TRS_2Q_IN_A_ROW,SAFE_FEATURE,Transazioni consecutive in 2 trimestri
+NB_TRS_2S_IN_A_ROW,SAFE_FEATURE,Transazioni consecutive in 2 semestri
+NB_TRS_2Y_IN_A_ROW,SAFE_FEATURE,Transazioni consecutive in 2 anni
+QTY_PDT_FULL_HIST,SAFE_FEATURE,N. prodotti storico
+QTY_PDT_0K_5K,SAFE_FEATURE,N. prodotti <5K
+QTY_PDT_5K_10K,SAFE_FEATURE,N. prodotti 5-10K
+QTY_PDT_10K_20K,SAFE_FEATURE,N. prodotti 10-20K
+QTY_PDT_20K_50K,SAFE_FEATURE,N. prodotti 20-50K
+QTY_PDT_MORE_5K,SAFE_FEATURE,N. prodotti >5K
+QTY_PDT_ACCESSORIES,SAFE_FEATURE,N. prodotti Accessories
+QTY_PDT_FRAGRANCES,SAFE_FEATURE,N. prodotti Fragrances
+QTY_PDT_WAT,SAFE_FEATURE,N. prodotti Watches
+QTY_PDT_JWL,SAFE_FEATURE,N. prodotti Jewelry
+QTY_PDT_JWL_WAT_HE,SAFE_FEATURE,N. prodotti High-End
+QTY_PDT_OTHER_HE,SAFE_FEATURE,N. prodotti Other High-End
+QTY_PDT_PRECIOUS_NBS,SAFE_FEATURE,N. prodotti con pietre preziose
+RECENCY,RISK_LEAKAGE,Recency globale — rispetto a DATE_TARGET o data estrazione?
+RECENCY_PDT_10K_20K,SAFE_FEATURE,Recency prodotti 10-20K (mesi a DATE_TARGET)
+RECENCY_PDT_20K_50K,SAFE_FEATURE,Recency prodotti 20-50K
+RECENCY_PDT_MORE_50K,SAFE_FEATURE,Recency prodotti >50K
+ALL_PURCHASED_PDT_CATEG,SAFE_FEATURE,Lista categorie acquistate storico
+ALL_PURCHASED_PDT_SUBCATEG,SAFE_FEATURE,Lista sottocategorie acquistate
+ALL_PURCHASED_PDT_COLLECTION,SAFE_FEATURE,Lista collezioni acquistate
+ALL_PURCHASED_PDT_FUNCTION,SAFE_FEATURE,Lista funzioni acquistate
+ALL_PURCHASED_PRICE_RANGE,SAFE_FEATURE,Lista range prezzo acquisti
+ALL_PURCHASED_DATES,RISK_LEAKAGE,Liste date acquisti — verificare <= DATE_TARGET
+ALL_REPAIR_PDT_CATEG,SAFE_FEATURE,Lista categorie riparate storico
+ALL_REPAIR_PDT_SUBCATEG,SAFE_FEATURE,Lista sottocategorie riparate
+ALL_REPAIR_PDT_COLLECTION,SAFE_FEATURE,Lista collezioni riparate
+ALL_REPAIR_PDT_FUNCTION,SAFE_FEATURE,Lista funzioni riparate
+ALL_REPAIR_PRICE_RANGE,SAFE_FEATURE,Lista range prezzo riparazioni
+ALL_REPAIR_DATES,RISK_LEAKAGE,Liste date riparazioni — verificare <= DATE_TARGET

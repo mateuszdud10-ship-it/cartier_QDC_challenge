@@ -1,0 +1,13 @@
+Dataset,Colonna,Tipo outlier,N record,% totale,Classificazione,Ipotesi causa
+Aggregated_2021,TARGET_3Y,Valori estremi coda destra (> p99.9),20,0.005,LEGITTIMO,VIC (Very Important Clients) - comportamento reale atteso
+Aggregated_2021,TARGET_3Y > TARGET_5Y,Violazione logica,0,0.0,OK,Anomalia nella costruzione del target
+Aggregated_2021,TO_FULL_HIST,Spend storico estremo (> p99.9),413,0.1,LEGITTIMO,Clienti storici VIC con decenni di acquisti
+Aggregated_2021,TO_FULL_HIST=0 con TARGET>0,Contraddizione logica,0,0.0,INCERTO,Clienti nuovi o storico pre-dataset
+Transactions,QTY_PDT,QTY_PDT > 10 (70 max),56,0.006,INCERTO,Acquisti multipli/wholesale o anomalia di inserimento
+Transactions,"ARTICLE_WWPRICE=0, TO>0 (Repair)",Prezzo articolo mancante su transazione con valore,3386,0.37,LEGITTIMO,Costo di servizio riparazione - articolo non prezzato nel catalogo
+Transactions,"ARTICLE_WWPRICE=0, TO>0 (Sale)",Prezzo articolo mancante su vendita con valore,20158,2.2,INCERTO,Articoli legacy/custom non catalogati - mantenere con flag WWPRICE_MISSING
+Articles,WORLD_PRICE,"WORLD_PRICE > 100k EUR (3,030 articoli)",3030,4.2,LEGITTIMO,"Alta gioielleria Cartier (diamanti, pezzi unici)"
+Articles,WORLD_PRICE < 1 EUR,Prezzo quasi-zero,20,0.03,INCERTO,"Accessori minori, servizi o errori di catalogazione"
+Clients,BIRTH_DATE,Data nascita pre-1900 o eta<18/eta>100,2312,0.56,ERRORE,Placeholder (1804-01-01) o dato mancante codificato
+CRC,APPOINTMENT_DURATION,Durata > 8 ore,4,0.003,ERRORE,Errore di inserimento durata appuntamento
+CCP,SALE_DATE > CREATION_DATE,Violazione logica date,228,0.51,ERRORE,"121 arrotondamento, 94 errori seri"

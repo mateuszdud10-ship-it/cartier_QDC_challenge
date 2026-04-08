@@ -1,0 +1,6 @@
+Check,N,Classificazione
+BIRTH_DATE pre-1900,1891,ERRORE - placeholder impossibile
+Eta < 18 anni al 2021,421,ERRORE - impossibile o placeholder
+Eta > 100 anni al 2021,1993,ERRORE - implausibile
+FIRST_PURCHASE vs FIRST_TRS > 365gg,7243,INCERTO
+SENIORITY = 0 (snapshot 2021),0,LEGITTIMO - cliente nuovo

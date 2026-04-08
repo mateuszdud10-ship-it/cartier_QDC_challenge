@@ -1,0 +1,7 @@
+Check,Value,ARTICLE_ID,Classificazione
+WWPRICE max in TRS,590000.0,['Article_113018'],LEGITTIMO - alta gioielleria
+WORLD_PRICE max in Articles,5500000.0,,LEGITTIMO - alta gioielleria
+Articoli WORLD_PRICE > 100k,3030.0,,LEGITTIMO
+Articoli WORLD_PRICE < 1 EUR,20.0,,INCERTO
+WWPRICE=0 con TO>0 (Repair),3386.0,,LEGITTIMO - costo servizio riparazione
+WWPRICE=0 con TO>0 (Sale),20158.0,,INCERTO - articoli non catalogati

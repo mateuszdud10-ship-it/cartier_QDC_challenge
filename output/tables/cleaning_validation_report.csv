@@ -1,0 +1,24 @@
+Check,Status,Dettaglio
+Righe Aggregated_Data,PASS,"raw=1,517,798 clean=1,517,798 rimosse=0"
+Righe Transactions,PASS,"raw=916,957 clean=916,953 rimosse=4"
+Righe Clients,PASS,"raw=412,571 clean=412,571 rimosse=0"
+Righe CRC,PASS,"raw=153,949 clean=153,945 rimosse=4"
+Righe CCP,PASS,"raw=44,280 clean=44,186 rimosse=94"
+No TO_WITHOUTTAX<0,PASS,0 record negativi
+No SN placeholder,PASS,0 placeholder residui
+No BIRTH_DATE pre-1900,PASS,0 date anomale residue
+No CRC DURATION>480,PASS,0 record anomali residui
+No CLIENT_ID null (Agg),PASS,0 null residui
+Flag AGE_KNOWN (Aggregated_Data),PASS,OK [0/1]
+Flag HAS_MULTIPLE_PURCHASES (Aggregated_Data),PASS,OK [0/1]
+Flag HAS_REPAIR_HISTORY (Aggregated_Data),PASS,OK [0/1]
+Flag TO_WITHOUTTAX_IMPUTED (Transactions),PASS,OK [0/1]
+Flag SERIAL_NUMBER_KNOWN (Transactions),PASS,OK [0/1]
+Flag WWPRICE_MISSING (Transactions),PASS,OK [0/1]
+Flag BIRTH_DATE_VALID (Clients),PASS,OK [0/1]
+Flag PURCHASE_DATE_ANOMALY (Clients),PASS,OK [0/1]
+Flag HAS_APPOINTMENT_DURATION (CRC),PASS,OK [0/1]
+Flag SALE_DATE_VALID (CCP),PASS,OK [0/1]
+TARGET_3Y immutato,PASS,"non-null raw=1,517,798 clean=1,517,798"
+TARGET_5Y immutato,PASS,"non-null raw=1,517,798 clean=1,517,798"
+TARGET_10Y immutato,PASS,"non-null raw=1,517,798 clean=1,517,798"

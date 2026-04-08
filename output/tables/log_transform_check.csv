@@ -1,0 +1,4 @@
+Target,Skewness_lineare,Kurtosis_lineare,Mean_Med_ratio,Skewness_log1p,Kurtosis_log1p,Skewness_log_nonzero,Kurtosis_log_nonzero,Pct_zero
+TARGET_3Y,34.369,2313.881,inf (mediana=0),4.384,17.739,0.059,0.111,95.17
+TARGET_5Y,26.461,1184.237,inf (mediana=0),3.787,12.762,0.03,0.147,93.8
+TARGET_10Y,26.461,1184.237,inf (mediana=0),3.787,12.762,0.03,0.147,93.8

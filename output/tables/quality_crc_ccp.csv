@@ -1,0 +1,11 @@
+Dataset,Check,Value
+CRC,CREATION_DATE range,2020-05-05 09:57:04 -- 2025-10-13 23:02:03
+CRC,CLIENT_ID unici,73431
+CRC,In snapshot 2021,28036
+CRC,% clienti 2021,6.8%
+CRC,Duration missing diagnosi,MAR - missing concentrato su certi ORIGIN
+CCP,CREATION_DATE range,2019-10-30 00:00:00 -- 2025-10-12 00:00:00
+CCP,CLIENT_ID unici,35150
+CCP,In snapshot 2021,5786
+CCP,% clienti 2021,1.4%
+CCP,Violazioni SALE>CREATION,228

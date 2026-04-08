@@ -554,3 +554,4 @@ conviene rimuoverne uno per coppia prima del training.
 2. Feature di interazione: SPEND_PAST_3Y/SENIORITY, SPEND_TREND×RECENCY_DAYS
 3. Feature CRC con filtro temporale corretto per snapshot storici
 4. Ciclo di acquisto individuale da ALL_PURCHASED_DATES
+- `output/tables/cleaning_validation_report.csv`: 23 check con status PASS/FAIL
