@@ -398,3 +398,160 @@ Imputazione solo per missing MAR su colonne con <50% missing sullo snapshot rile
 - `scripts/cleaning.py`: funzioni indipendenti per dataset, `run_all_cleaning()` per pipeline completa
 - `scripts/build_decision_map.py`: genera decision_map.csv
 - `output/tables/cleaning_validation_report.csv`: 23 check con status PASS/FAIL
+
+
+## Finding FE Step 1 — Stato Repository
+
+### Colonne aggiuntive non documentate
+- Clients_clean: MonoMultiMarket (mono/multi-mercato) — utile come feature
+- Transactions_clean: nomi colonne reali sono CATEG, SUBCATEG, 
+  Collection, PRODUCT_FUNCTION (non PDT_CATEG ecc. come da data dictionary)
+
+### Feature da escludere per zero/near-zero variance
+- MAX_PRICE_IN_BTQ: 100% zero — eliminare
+- NB_TRS_BTQ: 100% zero — eliminare  
+- TO_OTHER_HE: 99.99% zero — eliminare
+- TO_CRC, TO_WEB, TO_MORE_10K: >99% zero — escludere dal modello
+
+### ALL_PURCHASED_* e ALL_REPAIR_*
+- 12 colonne, tutte stringhe raw comma-separated non parsate
+- Richiedono str.split(',') + explode — escluse dal FE per ora
+- Da considerare come lavoro futuro se tempo disponibile
+
+### Supplementary features — rischio leakage
+- supplementary_features.csv aggregato su tutto lo storico senza filtro
+- Per sicurezza: usare solo HAS_CRC e HAS_CCP come flag binarie
+- Escludere N_CRC_INTERACTIONS e AVG_APPOINTMENT_DURATION dal training
+
+### data/raw/ 
+- Cartella vuota nella repo — raw non copiati
+- Cleaning script non rieseguibile senza raw
+- Dataset processed esistono e sono corretti (19/03/2026)
+## Finding FE Step 2 — Feature Engineering Completato (08/04/2026)
+
+### Feature set finale
+- **Train**: 1.105.227 righe × 92 colonne — snapshot 2006, 2009, 2012, 2015, 2018
+- **Test**: 412.571 righe × 92 colonne — snapshot 2021 (isolato)
+- **Feature totali**: 83 (esclusi CLIENT_ID, DATE_TARGET, target)
+  - Aggregated: 56 colonne pre-calcolate
+  - RFM_Transactions: 17 feature calcolate per snapshot
+  - Articles: 6 feature (join LEFT su ARTICLE_ID)
+  - Supplementary: 4 flag binarie (HAS_CRC, HAS_CCP, HAS_GIFT_REGISTERED, HAS_CLIENTELING)
+
+### Validazione: 9/9 check PASS
+- Nessuna colonna zero-variance
+- BINARY_TARGET_3Y correttamente 0/1
+- LOG_TARGET_3Y non negativo
+- Missing media: 0.1% (solo colonne Articles: 1.8% per clienti senza Sales nel periodo)
+
+### Top 5 feature predittive (correlazione |r| con TARGET_3Y, esclusi altri target)
+1. TO_PAST_3Y (Aggregated): r=0.182
+2. SPEND_PAST_3Y (RFM_Transactions): r=0.181  ← conferma che le feature RFM riproducono Aggregated
+3. TOTAL_SPEND / TO_FULL_HIST: r=0.165
+4. TO_BTQ: r=0.165
+5. TO_JWL: r=0.151
+
+### Implicazione critica: ridondanza RFM vs Aggregated
+- Le feature calcolate da Transactions (SPEND_PAST_3Y) sono quasi identiche alle colonne
+  di Aggregated_Data (TO_PAST_3Y). Correlazione attesa ~0.99.
+- Nel modello finale: considerare di usare SOLO le colonne Aggregated ed escludere le
+  feature RFM ridondanti, per ridurre il rischio di multicollinearità.
+- Le feature RFM uniche (BOUTIQUE_RATIO, HOLIDAY_PURCHASE_RATIO, AVG_DAYS_BETWEEN_TRS)
+  non hanno equivalenti in Aggregated — da mantenere.
+
+### Decisioni implementazione
+- TO_STDDEV_SPREAD aggiunto a ALWAYS_EXCLUDE (84.6% missing strutturale, stessa policy STDDEV_PRICE)
+- AVG_DAYS_BETWEEN_TRS: NaN fill=0 per clienti con 1 sola transazione (nessun gap misurabile)
+- Articles.csv: recuperato da percorso alternativo (data/raw/ vuota nel repo)
+- Supplementary: solo 4 flag binarie sicure — esclusi N_CRC_INTERACTIONS e AVG_APPOINTMENT_DURATION
+
+### Script e output
+- `scripts/feature_engineering.py`: pipeline modulare, eseguibile end-to-end
+- `notebooks/06_feature_engineering.ipynb`: notebook documentativo
+- `data/features/`: 7 file CSV (train_features.csv e test_features.csv pronti per modeling)
+- `output/tables/feature_correlations.csv`: correlazioni complete con TARGET_3Y
+- `output/tables/feature_engineering_report.csv`: report statistiche feature set
+
+## Finding Feature Selection (08/04/2026)
+
+### Feature set finale (train_features_final.csv / test_features_final.csv)
+- **Train**: 1.105.227 × 72 — snapshot 2006-2018
+- **Test**: 412.571 × 72 — snapshot 2021 (isolato)
+- **63 feature** (esclusi CLIENT_ID, DATE_TARGET, target)
+- **20 feature rimosse** da train_features.csv (92 colonne → 72)
+  - 13 near-zero variance (>99% zero)
+  - 7 duplicati RFM con equivalente in Aggregated
+
+### Coppie Aggregated-Aggregated r>0.95 (NON rimosse — decisione manuale richiesta)
+| Coppia | r |
+|---|---|
+| TO_FULL_HIST <-> TO_BTQ | 0.9999 |
+| TO_PAST_3Y_6Y <-> SPEND_3Y_6Y | 0.9961 |
+| TO_10K_20K <-> QTY_PDT_10K_20K | 0.9852 |
+| TO_5K_10K <-> QTY_PDT_5K_10K | 0.9829 |
+| TO_20K_50K <-> QTY_PDT_20K_50K | 0.9746 |
+| RECENCY <-> RECENCY_DAYS | 0.9549 |
+| MAX_PRICE_PER_PDT <-> MAX_PRICE_PER_TRS | 0.9514 |
+| MAX_PRICE_PER_PDT <-> MAX_SINGLE_SPEND | 1.0000 |
+
+Nota: queste coppie sono mantenute — per un modello tree-based (XGBoost/LightGBM)
+la multicollinearità non è un problema critico. Per regressione logistica/lineare
+conviene rimuoverne uno per coppia prima del training.
+
+### Colonne RFM aggiuntive rimosse rispetto a previsione
+- FLAG_HE_RATIO_TRS: >99% zero nel train (era in RFM_KEEP ma inutilizzabile)
+- RECENCY_DAYS: r=0.955 con RECENCY (Aggregated) — ridondante
+- MAX_SINGLE_SPEND: r=1.0 con MAX_PRICE_PER_PDT (Aggregated) — identica
+
+### Script
+- `scripts/feature_selection.py`: pipeline modulare, eseguibile end-to-end
+## Feature Engineering — Completato
+
+### Dataset finali
+- train_features.csv: 1.105.227 × 92 (snapshot 2006-2018)
+- test_features.csv: 412.571 × 92 (snapshot 2021, isolato)
+- 83 feature totali (esclusi id e target)
+
+### Top 5 predittori per TARGET_3Y
+1. TO_PAST_3Y / SPEND_PAST_3Y — r≈0.18
+2. TOTAL_SPEND / TO_FULL_HIST — r≈0.165
+3. TO_BTQ / TO_JWL — r≈0.15
+4. NB_TRS_FULL_HIST — r≈0.149
+5. MAX_ARTICLE_WORLD_PRICE — r≈0.116
+
+### Decisione multicollinearità
+- SPEND_PAST_3Y ≈ TO_PAST_3Y — tenere solo colonne Aggregated
+- Feature RFM uniche da mantenere: BOUTIQUE_RATIO,
+  HOLIDAY_PURCHASE_RATIO, AVG_DAYS_BETWEEN_TRS
+
+### Feature escluse
+- MAX_PRICE_IN_BTQ, NB_TRS_BTQ: zero variance
+- TO_OTHER_HE: near-zero variance (99.99% zero)
+- ALL_PURCHASED_*: stringhe raw non parsate — lavoro futuro
+- Supplementary continue (N_CRC_INTERACTIONS, AVG_APPOINTMENT_DURATION):
+  rischio leakage temporale — usate solo HAS_CRC e HAS_CCP
+
+### Prossimo step: M2 — Short-Term Spend Prediction (modeling)
+
+## Feature Engineering — Set Finale
+
+### Dataset finali pronti per modeling
+- train_features_final.csv: 1.105.227 × 72 (63 feature + 9 id/target)
+- test_features_final.csv: 412.571 × 72 (isolato)
+- 20 feature rimosse: 13 near-zero variance + 7 duplicati RFM
+
+### Coppie ad alta correlazione — decisione per modeling
+- TO_FULL_HIST ↔ TO_BTQ (r=0.9999): innocua per tree-based,
+  rimuovere TO_BTQ per regressione logistica
+- MAX_PRICE_PER_PDT ↔ MAX_PRICE_PER_TRS ↔ MAX_SINGLE_SPEND (r≈1.0):
+  rimuovere MAX_PRICE_PER_PDT e MAX_PRICE_PER_TRS prima del modeling
+  indipendentemente dall'algoritmo
+- TO_*K ↔ QTY_PDT_*K (r=0.97-0.99): innocua per tree-based,
+  rimuovere QTY_PDT_*K per regressione lineare/logistica
+
+### Planned improvements — Feature Engineering
+1. Parsing ALL_PURCHASED_* (sequenze prodotti) — alto impatto sul classificatore
+2. Feature di interazione: SPEND_PAST_3Y/SENIORITY, SPEND_TREND×RECENCY_DAYS
+3. Feature CRC con filtro temporale corretto per snapshot storici
+4. Ciclo di acquisto individuale da ALL_PURCHASED_DATES
+- `output/tables/cleaning_validation_report.csv`: 23 check con status PASS/FAIL
