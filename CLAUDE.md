@@ -555,3 +555,89 @@ conviene rimuoverne uno per coppia prima del training.
 3. Feature CRC con filtro temporale corretto per snapshot storici
 4. Ciclo di acquisto individuale da ALL_PURCHASED_DATES
 - `output/tables/cleaning_validation_report.csv`: 23 check con status PASS/FAIL
+
+## Feature Engineering — Completato
+
+### Dataset finali
+- train_features.csv: 1.105.227 × 92 (snapshot 2006-2018)
+- test_features.csv: 412.571 × 92 (snapshot 2021, isolato)
+- 83 feature totali (esclusi id e target)
+
+### Top 5 predittori per TARGET_3Y
+1. TO_PAST_3Y / SPEND_PAST_3Y — r≈0.18
+2. TOTAL_SPEND / TO_FULL_HIST — r≈0.165
+3. TO_BTQ / TO_JWL — r≈0.15
+4. NB_TRS_FULL_HIST — r≈0.149
+5. MAX_ARTICLE_WORLD_PRICE — r≈0.116
+
+### Decisione multicollinearità
+- SPEND_PAST_3Y ≈ TO_PAST_3Y — tenere solo colonne Aggregated
+- Feature RFM uniche da mantenere: BOUTIQUE_RATIO,
+  HOLIDAY_PURCHASE_RATIO, AVG_DAYS_BETWEEN_TRS
+
+### Feature escluse
+- MAX_PRICE_IN_BTQ, NB_TRS_BTQ: zero variance
+- TO_OTHER_HE: near-zero variance (99.99% zero)
+- ALL_PURCHASED_*: stringhe raw non parsate — lavoro futuro
+- Supplementary continue (N_CRC_INTERACTIONS, AVG_APPOINTMENT_DURATION):
+  rischio leakage temporale — usate solo HAS_CRC e HAS_CCP
+
+### Prossimo step: M2 — Short-Term Spend Prediction (modeling)
+
+## Feature Engineering — Set Finale
+
+### Dataset finali pronti per modeling
+- train_features_final.csv: 1.105.227 × 70 (63 feature + 7 id/target)
+- test_features_final.csv: 412.571 × 70 (isolato)
+- 20 feature rimosse: 13 near-zero variance + 7 duplicati RFM
+
+### Coppie ad alta correlazione — decisione per modeling
+- TO_FULL_HIST ↔ TO_BTQ (r=0.9999): innocua per tree-based,
+  rimuovere TO_BTQ per regressione logistica
+- MAX_PRICE_PER_PDT ↔ MAX_PRICE_PER_TRS ↔ MAX_SINGLE_SPEND (r≈1.0):
+  rimossi MAX_PRICE_PER_PDT e MAX_PRICE_PER_TRS
+- TO_*K ↔ QTY_PDT_*K (r=0.97-0.99): innocua per tree-based,
+  rimuovere QTY_PDT_*K per regressione lineare/logistica
+
+### Planned improvements — Feature Engineering
+1. Parsing ALL_PURCHASED_* (sequenze prodotti) — alto impatto sul classificatore
+2. Feature di interazione: SPEND_PAST_3Y/SENIORITY, SPEND_TREND×RECENCY_DAYS
+3. Feature CRC con filtro temporale corretto per snapshot storici
+4. Ciclo di acquisto individuale da ALL_PURCHASED_DATES
+- `output/tables/cleaning_validation_report.csv`: 23 check con status PASS/FAIL
+
+## Decisioni Modeling — Two-Part Model Baseline (08/04/2026)
+
+### Risultati Baseline (test snapshot 2021)
+
+#### Parte 1 — Classificatore (Logistic Regression, train su snapshot 2018)
+- PR-AUC: 0.2691 vs baseline 0.0483 — **lift 5.6x**
+- ROC-AUC: 0.8509
+- Recall top decile: 50.2% (top 10% clienti per score cattura 50% degli spender reali)
+
+#### Parte 2 — Regressore (XGBoost, best_iteration=110)
+- RMSE log-space: 1.1346 vs baseline 1.2900 — **miglioramento 12.0%**
+- MAE EUR: 5.178 EUR | Median AE EUR: 1.718 EUR
+
+#### Two-Part Model combinato
+- Top 1% clienti per score → 20.6% revenue
+- Top 5% → 47.0% revenue
+- Top 10% → 60.2% revenue
+- Top 20% → 74.3% revenue
+
+### Top feature per modello
+- Classificatore LR: RECENCY_DAYS (-), RECENCY (-), AGE_KNOWN (+), HAS_CRC_INTERACTION (+)
+- Regressore XGBoost: AVG_PRICE_PER_TRS, MAX_SINGLE_SPEND, TO_BTQ, AVG_PRICE_PER_PDT
+
+### Scelte implementative
+- LR allenata su snapshot 2018 (350k righe) per velocità — lbfgs solver, 300 iter
+- XGBoost early stopping su test_pos (accettabile per baseline, non per finale)
+- OrdinalEncoder per RESIDENCY_COUNTRY/MARKET, GENDER
+- TO_BTQ rimossa dalla LR (r=0.9999 con TO_FULL_HIST)
+
+### Prossimi step post mid-term
+1. Sostituire LR con XGBoost classifier
+2. Validation fold interna per early stopping (non test set)
+3. Tuning iperparametri
+4. Parsing ALL_PURCHASED_* per feature sequenziali
+5. Estendere a TARGET_5Y per CLV
