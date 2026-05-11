@@ -641,3 +641,137 @@ conviene rimuoverne uno per coppia prima del training.
 3. Tuning iperparametri
 4. Parsing ALL_PURCHASED_* per feature sequenziali
 5. Estendere a TARGET_5Y per CLV
+
+## Modeling V2 — FE V2 + XGBoost Classifier (11/05/2026)
+
+### Risultati finali V2 (tutti i DoD check: 10/10 PASS)
+
+| Metrica | V1 (baseline) | V2 | Delta |
+|---|---|---|---|
+| Feature totali | 63 | 110 | +47 |
+| PR-AUC | 0.2691 | **0.3234** | +20.2% |
+| ROC-AUC | 0.8509 | **0.8710** | +2.4pp |
+| Recall top decile | 50.2% | **54.4%** | +4.2pp |
+| RMSE log-space | 1.1346 | 1.1397 | ~stabile |
+| Top 10% revenue | 60.2% | **64.3%** | +4.1pp |
+| Top 20% revenue | 74.3% | **80.0%** | +5.7pp |
+
+### Nuove feature V2
+- **ALL_* parsing** (44 feature): HAS_/N_TOTAL_/N_DISTINCT_/DIVERSITY_ per
+  ALL_PURCHASED_PDT_CATEG/SUBCATEG/COLLECTION/FUNCTION/PRICE_RANGE + DATE;
+  e analoghe per REPAIR. Leakage check: 0 violazioni.
+- **Interaction** (5 feature): SPEND_PER_SENIORITY, TREND_X_RECENCY,
+  HE_PRICE_PROPENSITY, TRS_FREQUENCY_ANNUAL, RECENT_HIST_RATIO
+- **CRC temporali** (5 feature): N_CRC_SNAPSHOT, HAS_CRC_SNAP,
+  HAS_CLIENTELING_SNAP, AVG_DURATION_SNAP, HAS_AVG_DURATION per snapshot
+
+### Architettura modello V2
+- **Parte 1**: XGBoost Classifier (scala intera train tranne 2015, val=snapshot 2015)
+  - scale_pos_weight, eval_metric=aucpr, early_stopping=30, best_iteration=293
+  - OrdinalEncoder per RESIDENCY_COUNTRY/MARKET/GENDER
+- **Parte 2**: XGBoost Regressor (val=snapshot 2015 positivi, best_iteration=207)
+  - n_estimators=1000, lr=0.03, early_stopping=30
+
+### Top 10 feature classificatore V2 (gain importance)
+1. NB_TRS_FULL_HIST — 2151
+2. RECENCY_DAYS — 1869
+3. AGE_KNOWN — 1772
+4. TO_AVG_SPREAD — 1722
+5. HAS_CRC_INTERACTION — 1269
+6. TRS_FREQUENCY_ANNUAL — 907
+7. RESIDENCY_COUNTRY — 532
+8. AVG_DAYS_BETWEEN_TRS — 504
+9. RECENCY — 498
+10. HAS_MULTIPLE_PURCHASES — 396
+
+### Dataset V2 finali
+- train_features_final.csv: 1.105.227 x 119 (110 feature + 9 id/target)
+- test_features_final.csv: 412.571 x 119 (isolato)
+- Modelli salvati: classifier_xgb_v2.pkl, regressor_xgb_v2.pkl,
+  imputer_v2.pkl, ordinal_encoder_v2.pkl
+
+### Script
+- `scripts/fe_v2_pipeline.py`: pipeline end-to-end FE V2 + retraining
+- `output/tables/fe_v2_model_report.csv`: report completo V1 vs V2 + DoD
+
+### Nota: CRC solo snapshot 2021
+- CRC_clean ha dati dal 2019 in poi. Tutti gli snapshot 2006-2018 hanno
+  0 clienti con CRC. Le 5 feature CRC sono utili solo sul test (2021).
+  Non impattano il training — i valori sono tutti 0 sugli snapshot di train.
+
+## M3 — Customer Lifetime Value (11/05/2026)
+
+### Risultati finali M3 (tutti i DoD check: 7/7 PASS)
+
+#### Classificatore CLV — XGBoost su TARGET_5Y
+- PR-AUC: **0.3784** (baseline: 0.062, lift 6.1x)
+- ROC-AUC: 0.8736
+- Recall top decile: 52.8%
+
+#### Regressore CLV — XGBoost (val=snapshot 2015 positivi)
+- RMSE log-space: 1.1378 (baseline: 1.3329 -- miglioramento 14.6%)
+- MAE EUR: 6,053 | Median AE EUR: 1,984
+- Spearman r: **0.4545** (> soglia 0.35)
+
+#### Revenue Capture TARGET_5Y
+- Top 1%: 24.4% | Top 5%: 52.6%
+- **Top 10%: 66.6%** (> soglia 55%) | Top 20%: 81.7%
+
+### Segmentazione CLV 4 tier (snapshot 2021, n=412,571)
+| Tier | N clienti | % clienti | % revenue 5Y | Spend medio 5Y |
+|---|---|---|---|---|
+| VIC | 8,252 | 2.0% | 35.0% | 8,841 EUR |
+| High Spender | 33,006 | 8.0% | 31.6% | 1,996 EUR |
+| Aspirational | 123,771 | 30.0% | 26.9% | 453 EUR |
+| Dormant | 247,542 | 60.0% | 6.6% | 55 EUR |
+
+Soglie CLV score: VIC >= 4,499 | High Spender >= 2,170 | Aspirational >= 791
+
+### Early Detection Analysis
+- VIC 2021 identificati in VIC/High Spender degli snapshot storici:
+  - 2006: 73.8% (su 948 clienti presenti)
+  - 2009: 78.9% (su 1,532)
+  - 2012: 84.3% (su 2,270)
+  - 2015: 86.3% (su 3,472)
+  - 2018: **94.5%** (su 5,255)
+- Risultato chiave: il modello identifica i VIC futuri con anni di anticipo
+
+### Confronto M2 (TARGET_3Y) vs M3 (TARGET_5Y)
+- Spearman M2 vs M3 score: 0.9660 — i modelli concordano fortemente
+- Overlap top 10%: 85.1% — stessi clienti prioritari per entrambi gli orizzonti
+
+### Top 5 feature classificatore CLV
+1. HAS_CRC_INTERACTION — 1652
+2. AGE_KNOWN — 1312
+3. RECENCY_DAYS — 1214
+4. TO_AVG_SPREAD — 934
+5. NB_TRS_FULL_HIST — 666
+
+### Script e output
+- `scripts/m3_clv.py`: pipeline end-to-end M3, eseguibile autonomamente
+- `output/tables/m3_clv_report.csv`: report completo DoD
+- `output/tables/clv_segmentation_2021.csv`: segmentazione 4 tier per cliente
+- `output/tables/clv_tier_summary_2021.csv`: statistiche per tier
+- `output/tables/clv_panel_all_snapshots.csv`: CLV score su tutti gli snapshot
+- `output/tables/clv_early_detection.csv`: tracciamento VIC/HS negli snapshot storici
+- Modelli: classifier_clv.pkl, regressor_clv.pkl, imputer_clv.pkl, ordinal_encoder_clv.pkl
+
+## Spearman Rank Correlation — Modello V2 (11/05/2026)
+
+### Risultati
+| Contesto | Spearman r | Interpretazione |
+|---|---|---|
+| Regressore -- positivi (n=19.919) | 0.4288 | Accettabile |
+| Modello combinato -- tutti (n=412k) | 0.2405 | Debole (atteso: zero-inflation) |
+| Modello combinato -- solo positivi | 0.3829 | Accettabile |
+| Classificatore -- ranking binario | 0.2755 | Debole (atteso: zero-inflation) |
+
+### Interpretazione
+- Spearman bassa sul combinato e strutturale e attesa: 392k zeri vs 19k spender
+  rendono qualsiasi metrica di ranking globale penalizzata per costruzione.
+- La metrica business corretta rimane la revenue capture (64.3% top 10%).
+- **Decile table**: andamento monotono perfetto D1->D10 (3 EUR -> 2.155 EUR
+  spend medio reale) -- il modello ordina correttamente i clienti per valore.
+  Questo e il segnale operativo chiave per Cartier.
+- Spearman 0.43 sui positivi e nella norma per distribuzione power-law
+  (letteratura CLV: 0.35-0.55 considerato solido).
