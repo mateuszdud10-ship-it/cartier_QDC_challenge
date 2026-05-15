@@ -91,15 +91,37 @@ def load_and_prepare():
     joblib.dump(enc, os.path.join(MODELS_DIR, "ordinal_encoder.pkl"))
     print(f"  Categorical encoded:  {cat_present}")
 
+    # Convert any remaining object columns to numeric so imputer preserves column count
+    remaining_obj = train[feat_cols].dtypes[train[feat_cols].dtypes == object].index.tolist()
+    if remaining_obj:
+        print(f"  Converting remaining object columns to numeric: {remaining_obj}")
+        train[remaining_obj] = train[remaining_obj].apply(pd.to_numeric, errors="coerce")
+        test[remaining_obj]  = test[remaining_obj].apply(pd.to_numeric, errors="coerce")
+
     # --- Imputation (mediana, fit su train) ---
     imp_full = SimpleImputer(strategy="median")
     imp_lr   = SimpleImputer(strategy="median")
 
+    print(f"  feat_cols shape before imputation: {train[feat_cols].shape}")
+    print(f"  lr_feat_cols shape before imputation: {train[lr_feat_cols].shape}")
     X_train_full = imp_full.fit_transform(train[feat_cols])
     X_test_full  = imp_full.transform(test[feat_cols])
 
     X_train_lr   = imp_lr.fit_transform(train[lr_feat_cols])
     X_test_lr    = imp_lr.transform(test[lr_feat_cols])
+
+    if X_train_full.shape[1] != len(feat_cols):
+        print("  ATTENZIONE: mismatch tra colonne complete e array trasformato")
+        print(f"    feat_cols: {len(feat_cols)}")
+        print(f"    X_train_full.shape[1]: {X_train_full.shape[1]}")
+        print(f"    head dtypes for feat_cols: {train[feat_cols].dtypes.value_counts().to_dict()}")
+
+    if X_train_lr.shape[1] != len(lr_feat_cols):
+        print("  ATTENZIONE: mismatch tra colonne LR e array trasformato")
+        print(f"    lr_feat_cols: {len(lr_feat_cols)}")
+        print(f"    X_train_lr.shape[1]: {X_train_lr.shape[1]}")
+        print(f"    object dtypes in LR features: "
+              f"{train[lr_feat_cols].dtypes[train[lr_feat_cols].dtypes == object].index.tolist()}")
 
     joblib.dump(imp_full, os.path.join(MODELS_DIR, "imputer_full.pkl"))
     joblib.dump(imp_lr,   os.path.join(MODELS_DIR, "imputer_lr.pkl"))
@@ -202,7 +224,13 @@ def evaluate_classifier(clf, X_test_lr, y_test_bin, lr_feat_cols):
           f"-- top 10% cattura {recall_top_decile:.1%} degli spender")
 
     # Coefficienti LR (estratti dal Pipeline)
-    coef = clf.named_steps["lr"].coef_[0]
+    coef = clf.named_steps["lr"].coef_.ravel()
+    if len(coef) != len(lr_feat_cols):
+        print("  ATTENZIONE: mismatch tra coefficienti LR e nomi feature")
+        print(f"    coeff len: {len(coef)}")
+        print(f"    feature len: {len(lr_feat_cols)}")
+        lr_feat_cols = lr_feat_cols[:len(coef)]
+
     coef_df = pd.DataFrame({
         "feature":         lr_feat_cols,
         "coefficient":     coef,
@@ -327,9 +355,17 @@ def evaluate_regressor(reg, X_test_full, y_test_bin, y_test_log, y_test_raw,
     print(f"  Median AE EUR:     {median_ae_eur:>12,.0f}")
 
     # Feature importance XGBoost
+    importance = reg.feature_importances_
+    if len(importance) != len(feat_cols):
+        print("  ATTENZIONE: mismatch tra XGBoost importance e nomi feature")
+        print(f"    feature cols: {len(feat_cols)}")
+        print(f"    importance len: {len(importance)}")
+        print(f"    first extra features: {feat_cols[len(importance):len(importance)+5]}")
+        feat_cols = feat_cols[:len(importance)]
+
     imp_df = pd.DataFrame({
         "feature":    feat_cols,
-        "importance": reg.feature_importances_,
+        "importance": importance,
     }).sort_values("importance", ascending=False)
 
     print(f"\n  Top 15 feature (XGBoost gain importance):")
